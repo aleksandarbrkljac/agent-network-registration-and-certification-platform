@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Prisma / SQLite (demo persistence — lives in packages/db)
+*.db
+*.db-journal
+packages/db/prisma/dev.db*
+
+# Env
+.env
+.env.local
+*.local
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local agent tooling (Claude Code working notes — not part of the deliverable)
+.claude/

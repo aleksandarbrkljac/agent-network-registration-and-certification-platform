@@ -1,0 +1,27 @@
+# AWS Amplify build spec for the Agent Network web SPA (Amplify seam).
+#
+# Standard pnpm + Turborepo monorepo build: install once at the repo root, build
+# this app's workspace (which Turborepo resolves after its internal package deps),
+# and publish the Vite `dist/` output. `appRoot: apps/web` tells Amplify which
+# workspace app this spec belongs to in the monorepo.
+version: 1
+applications:
+  - appRoot: apps/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm install -g pnpm@9.15.9
+            - pnpm install --frozen-lockfile
+        build:
+          commands:
+            # Build this app and its workspace dependencies via Turborepo.
+            - pnpm --filter @agent-network/web... build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - node_modules/**/*
+          - ../../node_modules/**/*

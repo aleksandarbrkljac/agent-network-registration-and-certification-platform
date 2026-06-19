@@ -1,0 +1,42 @@
+{
+  "name": "@agent-network/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@agent-network/db": "workspace:*",
+    "@agent-network/shared": "workspace:*",
+    "@aws-lambda-powertools/logger": "^2.12.0",
+    "@trpc/server": "^11.0.0",
+    "gray-matter": "^4.0.3",
+    "zod": "^3.24.1"
+  },
+  "optionalDependencies": {
+    "octokit": "^4.0.2"
+  },
+  "devDependencies": {
+    "@agent-network/tsconfig": "workspace:*",
+    "@types/aws-lambda": "^8.10.147",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.2"
+  }
+}

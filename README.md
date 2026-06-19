@@ -44,3 +44,21 @@ Create an Agent Network platform that enables discovery, registration, certifica
 
 ## Reference
 [Soofi XYZ Team Kit](https://github.com/soofi-xyz/soofi-xyz-team-kit)
+
+---
+
+## Implementation (this repo)
+
+A local-runnable, golden-path-shaped implementation lives in this repository.
+
+```bash
+pnpm install
+pnpm setup     # prisma db push + seed
+pnpm dev       # web on http://localhost:5173, API on http://localhost:3001
+```
+
+Stack: Turborepo + pnpm monorepo · `packages/shared` (Zod schemas, lifecycle state machine,
+manifest parser) · `packages/db` (Prisma + SQLite) · `apps/api` (tRPC + service layer + discovery,
+with Lambda/CDK prod seams) · `apps/web` (Vite + React + Tailwind). All services are TypeScript;
+the marketplace publish gate and lifecycle transitions are enforced in the service layer and
+unit-tested.

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+pnpm-lock.yaml
+
+# Authored spec/plan docs — hand-tuned tables, kept out of auto-formatting.
+README.md
+
+# Bundled verbatim agent-manifest snapshots — must stay byte-identical to the
+# upstream team-kit `agents/*.md` (the discovery/parser logic depends on them).
+apps/api/src/discovery/fixtures/agents/
+packages/db/src/fixtures/agents/

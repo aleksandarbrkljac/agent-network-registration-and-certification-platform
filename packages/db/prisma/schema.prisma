@@ -1,0 +1,173 @@
+// Prisma schema for the Agent Network platform.
+//
+// Isolation rule: Prisma lives entirely in `packages/db`. None of the
+// generated model types leak out — the repository layer maps every row to the
+// `@agent-network/shared` domain types at the boundary. A later DynamoDB swap
+// touches only this package.
+//
+// Modelling notes:
+//   * String PKs via `cuid()` — collision-resistant, sortable enough for a demo,
+//     and portable to a DynamoDB partition key later.
+//   * SQLite has no native enums, so `Agent.status`, dependency `kind`, IO
+//     `direction`, review `decision`, run `status`, source `type`, and user
+//     `role` are stored as `String` and validated against the shared Zod enums
+//     at the repository boundary (never trusting raw DB text).
+//   * Idempotent discovery: discovered agents are unique per source by
+//     `(slug, sourceKey)`. `sourceKey` is a NON-NULL mirror of the optional
+//     `sourceId` (it holds the sourceId for discovered agents, or the sentinel
+//     "manual" for manually-registered ones). SQLite/Prisma treats NULL as
+//     distinct in unique indexes, which would let duplicate manual slugs through;
+//     the non-null `sourceKey` sentinel makes the composite unique actually
+//     enforce one agent per (slug, origin).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id          String   @id @default(cuid())
+  slug        String
+  name        String
+  description String   @default("")
+  purpose     String   @default("")
+  version     String   @default("")
+  status      String
+  ownerId     String?
+  sourceType  String
+  // Idempotency key: sourceId for discovered agents, "manual" sentinel otherwise.
+  sourceKey   String
+  sourceId    String?
+  sourceRepo  String?
+  sourcePath  String?
+  sourceCommit String?
+  model       String?
+  documentation       String?
+  installInstructions String?
+  usageGuidance       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner        User?                 @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  source       Source?               @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  capabilities AgentCapability[]
+  dependencies AgentDependency[]
+  io           AgentIO[]
+  reviews      CertificationReview[]
+  runs         AgentRun[]
+
+  @@unique([slug, sourceKey])
+  @@index([status])
+}
+
+model AgentCapability {
+  id          String @id @default(cuid())
+  agentId     String
+  name        String
+  description String @default("")
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model AgentDependency {
+  id      String  @id @default(cuid())
+  agentId String
+  kind    String
+  name    String
+  ref     String?
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model AgentIO {
+  id          String  @id @default(cuid())
+  agentId     String
+  direction   String
+  name        String
+  type        String  @default("")
+  description String?
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model CertificationReview {
+  id                String   @id @default(cuid())
+  agentId           String
+  reviewerId        String
+  decision          String
+  notes             String   @default("")
+  evaluationOutcome String?
+  createdAt         DateTime @default(now())
+
+  agent    Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  reviewer User  @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model AgentRun {
+  id         String    @id @default(cuid())
+  agentId    String
+  status     String
+  startedAt  DateTime
+  finishedAt DateTime?
+  durationMs Int?
+  caller     String?
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model Source {
+  id         String   @id @default(cuid())
+  type       String
+  repoUrl    String
+  branch     String   @default("main")
+  agentsPath String   @default("agents/")
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  agents        Agent[]
+  discoveryRuns DiscoveryRun[]
+
+  @@unique([repoUrl, agentsPath])
+}
+
+model DiscoveryRun {
+  id              String    @id @default(cuid())
+  sourceId        String
+  discoveredCount Int       @default(0)
+  createdCount    Int       @default(0)
+  updatedCount    Int       @default(0)
+  startedAt       DateTime
+  finishedAt      DateTime?
+  durationMs      Int?
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedAgents Agent[]
+  reviews     CertificationReview[]
+}
