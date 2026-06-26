@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+**/dist
+.turbo
+**/.turbo
+**/*.db
+packages/db/prisma/*.db
+**/*.tsbuildinfo
+.git
+.github
+docs/*.mp4
+*.log
+**/*.log

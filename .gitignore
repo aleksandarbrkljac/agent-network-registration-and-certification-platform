@@ -9,6 +9,9 @@ coverage/
 *.db-journal
 packages/db/prisma/dev.db*
 
+# Demo videos live in the PR description, not the repo
+docs/*.mp4
+
 # Env
 .env
 .env.local

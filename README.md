@@ -57,6 +57,23 @@ pnpm setup     # prisma db push + seed
 pnpm dev       # web on http://localhost:5173, API on http://localhost:3001
 ```
 
+### Working runtime — one command (Docker)
+
+No toolchain needed beyond Docker. From this directory:
+
+```bash
+docker compose up --build
+```
+
+Then open **http://localhost:5173**. The image builds the whole monorepo, seeds a
+fresh SQLite DB (8 agents — one in every lifecycle status), serves the tRPC API on
+`:3001` and the SPA on `:5173`. Stop with `Ctrl-C` (or `docker compose down`); the
+demo data is re-seeded on each start, so the runtime is always in the clean demo state.
+
+> The AWS golden path (`apps/api/handler.ts` Lambda adapter, `apps/api/cdk/`,
+> `apps/web/amplify.yml`) is shaped but intentionally deferred — this Docker image is
+> the runnable demo runtime.
+
 Stack: Turborepo + pnpm monorepo · `packages/shared` (Zod schemas, lifecycle state machine,
 manifest parser) · `packages/db` (Prisma + SQLite) · `apps/api` (tRPC + service layer + discovery,
 with Lambda/CDK prod seams) · `apps/web` (Vite + React + Tailwind). All services are TypeScript;

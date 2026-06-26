@@ -1,0 +1,20 @@
+# One-command working runtime for the Agent Network platform.
+#
+#   docker compose up --build
+#
+# Then open http://localhost:5173 — the SPA, its tRPC API (:3001), and a freshly
+# seeded SQLite DB (8 agents, one per lifecycle status) come up together.
+services:
+  app:
+    build:
+      context: .
+      args:
+        # Browser-facing API URL, baked into the SPA at build time.
+        VITE_API_URL: http://localhost:3001
+    container_name: agent-network
+    ports:
+      - "5173:5173" # web (SPA)
+      - "3001:3001" # api (tRPC)
+    environment:
+      PORT: "3001"
+      WEB_ORIGIN: http://localhost:5173
