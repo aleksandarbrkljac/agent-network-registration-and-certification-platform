@@ -9,8 +9,9 @@ services:
     build:
       context: .
       args:
-        # Browser-facing API URL, baked into the SPA at build time.
-        VITE_API_URL: http://localhost:3001
+        # Browser-facing API URL, baked into the SPA at build time. The SPA on :5173
+        # calls the API on :3001 under the /trpc path.
+        VITE_API_URL: http://localhost:3001/trpc
     container_name: agent-network
     ports:
       - "5173:5173" # web (SPA)

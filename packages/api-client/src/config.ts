@@ -3,8 +3,8 @@
  * configuration"). Reads `VITE_API_URL` when present (Vite inlines `import.meta.env`
  * at build time) and falls back to the local dev server origin.
  *
- * The verified-live dev API runs at http://localhost:3001 with permissive CORS
- * for the Vite origin, so the default works out of the box.
+ * The dev API runs at http://localhost:3001 and serves tRPC under the `/trpc`
+ * path with permissive CORS for the Vite origin, so the default works out of the box.
  */
 
 interface ViteEnv {
@@ -18,7 +18,7 @@ interface ViteEnv {
  */
 function resolveApiUrl(): string {
   const env = (import.meta as ImportMeta & { env?: ViteEnv }).env;
-  return env?.VITE_API_URL ?? "http://localhost:3001";
+  return env?.VITE_API_URL ?? "http://localhost:3001/trpc";
 }
 
 export const API_URL: string = resolveApiUrl();

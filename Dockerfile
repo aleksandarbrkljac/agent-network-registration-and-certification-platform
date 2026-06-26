@@ -25,7 +25,10 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 
 # Bake the browser-facing API URL into the SPA at build time (Vite inlines VITE_*).
-ARG VITE_API_URL=http://localhost:3001
+# Default to a same-origin `/trpc` so a plain image build (what Render does) has the
+# SPA call the API on the same host/port. docker-compose overrides this with the
+# absolute two-port dev URL (http://localhost:3001/trpc).
+ARG VITE_API_URL=/trpc
 ENV VITE_API_URL=$VITE_API_URL
 
 # Absolute SQLite path so the Prisma CLI, the seed, and the runtime client all

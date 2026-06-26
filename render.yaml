@@ -1,0 +1,21 @@
+# Render Blueprint — deploys the Agent Network platform as a SINGLE web service.
+#
+# How it works:
+#   - The Docker image build bakes `VITE_API_URL=/trpc` (the Dockerfile ARG default),
+#     so the built SPA calls the tRPC API same-origin under `/trpc`.
+#   - `apps/api/dist/server.js` serves BOTH the built SPA (apps/web/dist) and the
+#     tRPC API on a single `$PORT` (Render injects PORT; the server binds 0.0.0.0).
+#   - `dockerCommand` overrides the image CMD (which runs the two-port local demo)
+#     to run the single-port server after pushing + seeding the SQLite schema.
+#
+# Caveat: the free plan has an ephemeral filesystem, so the demo SQLite DB is
+# re-pushed and re-seeded on every cold start. That is acceptable for this demo.
+services:
+  - type: web
+    name: agent-network
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /healthz
+    autoDeploy: true
+    dockerCommand: sh -lc "pnpm --filter @agent-network/db db:push && pnpm --filter @agent-network/db db:seed && node apps/api/dist/server.js"
