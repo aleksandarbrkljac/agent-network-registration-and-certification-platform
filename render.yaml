@@ -22,3 +22,13 @@ services:
     healthCheckPath: /healthz
     autoDeploy: true
     dockerCommand: sh scripts/render-start.sh
+    envVars:
+      # Optional. When set, the discovery service uses the live GitHub driver for
+      # the seeded `github`-typed source (soofi-xyz/soofi-xyz-team-kit) — so
+      # "Scan now" lists agents/*.md from real GitHub instead of the bundled
+      # offline snapshot. A read-only / public-repo-scope PAT is enough (it only
+      # lists the agents/ directory and avoids unauthenticated rate limits).
+      # octokit is already an installed (optional) dependency. Unset -> offline
+      # snapshot driver (deterministic) is used, so the demo still works.
+      - key: GITHUB_TOKEN
+        sync: false
