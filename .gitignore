@@ -4,6 +4,9 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# CDK synth output
+cdk.out/
+
 # Prisma / SQLite (demo persistence — lives in packages/db)
 *.db
 *.db-journal

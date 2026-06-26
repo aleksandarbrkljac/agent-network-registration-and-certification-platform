@@ -1,54 +1,75 @@
 /**
- * PRODUCTION SEAM — documented CDK stub.
+ * PRODUCTION SEAM — API Gateway HTTP API → Lambda (`src/handler.ts`).
  *
- * This skeleton shows the on-path AWS shape for the tRPC backend: the `handler.ts`
- * Lambda behind an API Gateway HTTP API with a per-environment custom domain
- * base-path mapping, following `build-frontend-backends/rules/cdk-api-infrastructure`
- * and `apply-engineering-guidelines` (region us-east-2, Powertools, cost tags).
+ * Follows `build-frontend-backends/rules/cdk-api-infrastructure` and
+ * `apply-engineering-guidelines`: primary region us-east-2, Powertools env,
+ * X-Ray active tracing, 90-day logs, cost tags.
  *
- * It is NOT compiled by `tsc -p tsconfig.json` (which only includes `src/**`) and
- * NOT deployed in the demo. It depends on `aws-cdk-lib` + `constructs`, which the
- * demo does not install. To activate the deploy seam later: `pnpm add -D aws-cdk-lib
- * constructs aws-cdk`, then `cdk deploy` with `cdk/tsconfig.json`. Kept as a stub so
- * the gap reads as DEFERRED, not done.
- *
- * @example Sketch of the intended stack (commented to keep the demo install lean):
- *
- * import { Stack, type StackProps, Duration, Tags } from "aws-cdk-lib";
- * import { Runtime } from "aws-cdk-lib/aws-lambda";
- * import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
- * import { HttpApi } from "aws-cdk-lib/aws-apigatewayv2";
- * import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
- * import type { Construct } from "constructs";
- *
- * export interface ApiStackProps extends StackProps {
- *   stage: "dev" | "prod";
- *   databaseUrl: string; // DynamoDB swap target (not SQLite in prod).
- * }
- *
- * export class ApiStack extends Stack {
- *   constructor(scope: Construct, id: string, props: ApiStackProps) {
- *     super(scope, id, props);
- *     const fn = new NodejsFunction(this, "TrpcHandler", {
- *       entry: "src/handler.ts",
- *       handler: "handler",
- *       runtime: Runtime.NODEJS_20_X,
- *       timeout: Duration.seconds(15),
- *       memorySize: 512,
- *       environment: {
- *         DATABASE_URL: props.databaseUrl,
- *         POWERTOOLS_SERVICE_NAME: "agent-network-api",
- *       },
- *       tracing: Tracing.ACTIVE, // X-Ray Tracer attaches at deploy time.
- *     });
- *     const api = new HttpApi(this, "HttpApi", {
- *       defaultIntegration: new HttpLambdaIntegration("TrpcIntegration", fn),
- *       corsPreflight: { allowOrigins: [props.stage === "prod" ? "https://app.example.com" : "*"] },
- *     });
- *     Tags.of(this).add("cost-center", "agent-network");
- *     // Custom domain + base-path mapping per environment would attach here.
- *   }
- * }
+ * The Lambda code is the compiled `dist/` output (`pnpm --filter @agent-network/api build`
+ * must run first), shipped via `Code.fromAsset` so `cdk synth` needs neither esbuild
+ * nor Docker. Production swaps SQLite → DynamoDB inside `packages/db` (isolated there);
+ * `databaseUrl` is injected per environment.
  */
+import { Stack, type StackProps, Duration, Tags, RemovalPolicy, CfnOutput } from "aws-cdk-lib";
+import { Function as LambdaFunction, Runtime, Code, Tracing, Architecture } from "aws-cdk-lib/aws-lambda";
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
+import { HttpApi, CorsHttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import type { Construct } from "constructs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-export const CDK_STACK_STUB = true as const;
+const here = dirname(fileURLToPath(import.meta.url));
+/** Compiled handler bundle: apps/api/dist (sibling of cdk/). */
+const distPath = join(here, "..", "..", "dist");
+
+export interface ApiStackProps extends StackProps {
+  stage: "dev" | "prod";
+  /** Connection string for the production datastore (DynamoDB target, not SQLite). */
+  databaseUrl: string;
+}
+
+export class ApiStack extends Stack {
+  constructor(scope: Construct, id: string, props: ApiStackProps) {
+    super(scope, id, props);
+    const { stage, databaseUrl } = props;
+
+    const logGroup = new LogGroup(this, "TrpcHandlerLogs", {
+      retention: RetentionDays.THREE_MONTHS,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const handler = new LambdaFunction(this, "TrpcHandler", {
+      runtime: Runtime.NODEJS_20_X,
+      architecture: Architecture.ARM_64,
+      handler: "handler.handler",
+      code: Code.fromAsset(distPath),
+      memorySize: 512,
+      timeout: Duration.seconds(15),
+      tracing: Tracing.ACTIVE,
+      logGroup,
+      environment: {
+        DATABASE_URL: databaseUrl,
+        POWERTOOLS_SERVICE_NAME: "agent-network-api",
+        POWERTOOLS_LOG_LEVEL: stage === "prod" ? "INFO" : "DEBUG",
+        NODE_OPTIONS: "--enable-source-maps",
+      },
+    });
+
+    const httpApi = new HttpApi(this, "HttpApi", {
+      apiName: `agent-network-api-${stage}`,
+      defaultIntegration: new HttpLambdaIntegration("TrpcIntegration", handler),
+      corsPreflight: {
+        allowOrigins: [stage === "prod" ? "https://app.example.com" : "*"],
+        allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST, CorsHttpMethod.OPTIONS],
+        allowHeaders: ["content-type", "authorization"],
+      },
+    });
+
+    Tags.of(this).add("project_name", "agent-network");
+    Tags.of(this).add("cost-center", "agent-network");
+    Tags.of(this).add("stage", stage);
+
+    new CfnOutput(this, "ApiUrl", { value: httpApi.apiEndpoint });
+  }
+}

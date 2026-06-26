@@ -4,7 +4,8 @@
 #   docker compose up --build        # then open http://localhost:5173
 #
 # This is the local/demo runtime. The AWS "golden path" (apps/api/handler.ts +
-# apps/api/cdk + apps/web/amplify.yml) is the shaped-but-deferred production path.
+# apps/api/cdk + apps/web/amplify.yml) is the production path: cdk:synth emits the
+# CloudFormation; only the SQLite -> DynamoDB swap in packages/db remains.
 FROM node:20-slim
 
 # Prisma's query engine needs openssl present in the image.

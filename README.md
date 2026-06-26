@@ -71,8 +71,10 @@ fresh SQLite DB (8 agents — one in every lifecycle status), serves the tRPC AP
 demo data is re-seeded on each start, so the runtime is always in the clean demo state.
 
 > The AWS golden path (`apps/api/handler.ts` Lambda adapter, `apps/api/cdk/`,
-> `apps/web/amplify.yml`) is shaped but intentionally deferred — this Docker image is
-> the runnable demo runtime.
+> `apps/web/amplify.yml`) is real and synthesizable —
+> `pnpm --filter @agent-network/api build && pnpm --filter @agent-network/api cdk:synth`
+> emits the dev/prod CloudFormation. The SQLite → DynamoDB swap (isolated in `packages/db`)
+> is the one remaining production step. This Docker image stays the runnable demo runtime.
 
 Stack: Turborepo + pnpm monorepo · `packages/shared` (Zod schemas, lifecycle state machine,
 manifest parser) · `packages/db` (Prisma + SQLite) · `apps/api` (tRPC + service layer + discovery,

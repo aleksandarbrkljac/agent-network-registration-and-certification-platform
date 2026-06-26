@@ -17,7 +17,9 @@
     "start": "node dist/server.js",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cdk:typecheck": "tsc -p cdk/tsconfig.json",
+    "cdk:synth": "cdk synth --app \"tsx cdk/bin/app.ts\""
   },
   "dependencies": {
     "@agent-network/db": "workspace:*",
@@ -34,6 +36,9 @@
     "@agent-network/tsconfig": "workspace:*",
     "@types/aws-lambda": "^8.10.147",
     "@types/node": "^22.10.5",
+    "aws-cdk": "^2.1006.0",
+    "aws-cdk-lib": "^2.176.0",
+    "constructs": "^10.4.2",
     "eslint": "^9.18.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
